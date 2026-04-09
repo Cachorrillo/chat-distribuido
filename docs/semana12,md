@@ -1,0 +1,92 @@
+# Semana 12 – Planificación del proyecto
+
+## Metodología de trabajo
+
+Para el desarrollo de este proyecto se utilizará una metodología incremental, basada en la construcción progresiva del sistema por etapas funcionales. Este enfoque permitirá implementar, probar y mejorar cada componente antes de avanzar al siguiente, reduciendo errores de integración y facilitando el control del avance.
+
+La metodología se organizará en las siguientes fases:
+
+1. Definición de la arquitectura del sistema.
+2. Implementación del servidor principal.
+3. Implementación del cliente.
+4. Incorporación del servidor de respaldo.
+5. Desarrollo de mecanismos de detección de fallos y reconexión.
+6. Pruebas de concurrencia y disponibilidad.
+7. Contenerización y despliegue en entorno Linux sobre WSL.
+8. Documentación final y presentación del proyecto.
+
+Este enfoque es adecuado para el proyecto porque permite construir primero una base funcional del chat y luego agregar los mecanismos de calidad y alta disponibilidad que constituyen el objetivo principal del trabajo.
+
+## Herramientas y tecnologías
+
+Para el desarrollo del proyecto se utilizarán las siguientes herramientas y tecnologías:
+
+- **C#** como lenguaje de programación principal.
+- **.NET** como plataforma de desarrollo para la implementación de cliente y servidor.
+- **Sockets TCP** para la comunicación entre procesos.
+- **Docker** para la creación de contenedores y despliegue del sistema.
+- **WSL (Windows Subsystem for Linux)** como entorno Linux de ejecución y pruebas.
+- **Git y GitHub** para control de versiones y almacenamiento del repositorio.
+- **Visual Studio Code o Visual Studio** como entornos de desarrollo.
+- **Terminal de Windows y terminal Linux en WSL** para ejecución, pruebas y despliegue.
+
+## Recursos necesarios
+
+### Recursos de hardware
+- Computadora personal con sistema operativo Windows.
+- Acceso a WSL para pruebas en entorno Linux.
+- Conexión a internet para uso de GitHub y descarga de dependencias.
+
+### Recursos de software
+- SDK de .NET instalado.
+- Docker Desktop con integración con WSL.
+- Git instalado y configurado.
+- Editor o IDE para desarrollo del código.
+- Navegador web para acceso a GitHub y documentación técnica.
+
+## Plan de trabajo
+
+## Etapa 1: organización inicial del proyecto
+- Creación del repositorio en GitHub.
+- Definición de la estructura de carpetas.
+- Preparación de la documentación inicial del proyecto.
+
+## Etapa 2: diseño de la solución
+- Definición de la arquitectura cliente-servidor.
+- Diseño del flujo de comunicación entre clientes y servidores.
+- Identificación de los mecanismos de alta disponibilidad que se implementarán.
+
+## Etapa 3: desarrollo del servidor principal
+- Implementación de la lógica de escucha de conexiones.
+- Recepción de múltiples clientes concurrentes.
+- Gestión de mensajes entrantes y salientes.
+
+## Etapa 4: desarrollo del cliente
+- Implementación de conexión al servidor.
+- Envío de mensajes al servidor.
+- Recepción de mensajes distribuidos desde el servidor.
+
+## Etapa 5: incorporación de alta disponibilidad
+- Implementación de un servidor de respaldo.
+- Definición de un mecanismo de detección de caída del servidor principal.
+- Desarrollo de reconexión automática del cliente o cambio al servidor alterno.
+
+## Etapa 6: pruebas y validación
+- Pruebas con múltiples clientes concurrentes.
+- Simulación de caída del servidor principal.
+- Verificación de continuidad del servicio.
+- Medición de tiempos de respuesta y estabilidad.
+
+## Etapa 7: despliegue
+- Creación de contenedores Docker para los servidores.
+- Configuración de `docker-compose` para levantar los servicios.
+- Ejecución del sistema en entorno Linux sobre WSL.
+
+## Etapa 8: cierre del proyecto
+- Elaboración del README final.
+- Ajuste de documentación técnica.
+- Preparación de la demostración y exposición final.
+
+## Resultados esperados de esta planificación
+
+A partir de esta planificación se espera obtener un prototipo funcional de chat distribuido que permita demostrar el uso de sockets TCP, concurrencia y mecanismos básicos de alta disponibilidad. Además, se espera que el sistema pueda ejecutarse de forma portable mediante contenedores, facilitando su despliegue y evaluación en un entorno Linux sobre WSL.
