@@ -1,0 +1,32 @@
+# Semana 11 – Definición del tema y objetivos
+
+## Tema del proyecto
+
+Desarrollo de un sistema de chat distribuido con sockets TCP y concurrencia, con mecanismos básicos de alta disponibilidad.
+
+## Título del proyecto
+
+Diseño e implementación de un chat distribuido con sockets TCP, concurrencia y alta disponibilidad básica.
+
+## Objetivo general
+
+Diseñar e implementar un sistema de comunicación distribuido basado en sockets TCP que permita la interacción entre múltiples clientes, incorporando mecanismos básicos de alta disponibilidad mediante tolerancia a fallos, reconexión automática y redundancia básica de servidores.
+
+## Objetivos específicos
+
+1. Desarrollar un servidor de chat capaz de aceptar múltiples clientes conectados simultáneamente mediante sockets TCP.
+2. Implementar mecanismos de concurrencia para la atención paralela de conexiones.
+3. Diseñar un cliente que permita enviar y recibir mensajes en tiempo real.
+4. Incorporar un esquema de servidor principal y servidor de respaldo para mejorar la disponibilidad del sistema.
+5. Implementar mecanismos básicos de detección de fallos y reconexión automática del cliente.
+6. Evaluar métricas de desempeño del sistema, tales como tiempo de respuesta, estabilidad y continuidad del servicio ante fallos.
+
+## Alcance
+
+El proyecto abarcará el desarrollo de un prototipo funcional de chat distribuido con arquitectura cliente-servidor, usando sockets TCP y atención concurrente de múltiples clientes. También incluirá mecanismos básicos de alta disponibilidad, como la existencia de un servidor principal y un servidor de respaldo, además de lógica de reconexión del cliente.
+
+No formará parte obligatoria del alcance la implementación de algoritmos avanzados de elección automática de líder ni replicación compleja de estado entre múltiples nodos, salvo que el tiempo del proyecto lo permita.
+
+## Justificación
+
+Este proyecto permite aplicar conceptos fundamentales de sistemas operativos, redes y sistemas distribuidos, tales como concurrencia, comunicación entre procesos, sockets TCP, tolerancia a fallos y disponibilidad del servicio. El uso de un chat como caso de estudio facilita demostrar el comportamiento del sistema ante múltiples clientes y ante fallos controlados, manteniendo el enfoque principal en la calidad del servicio más que en la complejidad funcional del producto.
