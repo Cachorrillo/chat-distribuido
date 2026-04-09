@@ -1,0 +1,15 @@
+# Archivos de compilación .NET
+bin/
+obj/
+
+# Archivos de usuario
+*.user
+*.suo
+
+# VS Code / Visual Studio
+.vscode/
+.vs/
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
