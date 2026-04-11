@@ -15,22 +15,36 @@ try
     using StreamReader reader = new StreamReader(stream, Encoding.UTF8);
     using StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true };
 
-    // mensaje inicial del servidor
-    string? bienvenida = reader.ReadLine();
-    Console.WriteLine($"[SERVIDOR] {bienvenida}");
+    Task tareaLectura = Task.Run(() =>
+    {
+        try
+        {
+            while (true)
+            {
+                string? mensaje = reader.ReadLine();
+
+                if (mensaje == null)
+                    break;
+
+                Console.WriteLine($"\n[CHAT] {mensaje}");
+                Console.Write("Mensaje: ");
+            }
+        }
+        catch
+        {
+            Console.WriteLine("\n[CLIENTE] Conexión cerrada.");
+        }
+    });
 
     while (true)
     {
         Console.Write("Mensaje: ");
         string? mensaje = Console.ReadLine();
 
-        if (string.IsNullOrEmpty(mensaje))
+        if (string.IsNullOrWhiteSpace(mensaje))
             continue;
 
         writer.WriteLine(mensaje);
-
-        string? respuesta = reader.ReadLine();
-        Console.WriteLine($"[SERVIDOR] {respuesta}");
     }
 }
 catch (Exception ex)

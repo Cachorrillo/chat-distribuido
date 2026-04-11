@@ -9,17 +9,22 @@ servidor.Start();
 
 Console.WriteLine($"[SERVIDOR] Escuchando en el puerto {puerto}...");
 
+// Lista de clientes conectados
+List<TcpClient> clientes = new List<TcpClient>();
+
 while (true)
 {
     TcpClient cliente = servidor.AcceptTcpClient();
+    clientes.Add(cliente);
+
     IPEndPoint? endPoint = cliente.Client.RemoteEndPoint as IPEndPoint;
 
     Console.WriteLine($"[SERVIDOR] Cliente conectado desde {endPoint?.Address}:{endPoint?.Port}");
 
-    _ = Task.Run(() => ManejarCliente(cliente));
+    _ = Task.Run(() => ManejarCliente(cliente, clientes));
 }
 
-static void ManejarCliente(TcpClient cliente)
+static void ManejarCliente(TcpClient cliente, List<TcpClient> clientes)
 {
     try
     {
@@ -34,12 +39,30 @@ static void ManejarCliente(TcpClient cliente)
             string? mensaje = reader.ReadLine();
 
             if (mensaje == null)
-            {
                 break;
-            }
 
             Console.WriteLine($"[MENSAJE] {mensaje}");
-            writer.WriteLine($"Servidor recibió: {mensaje}");
+
+            // Enviar a todos los clientes
+            lock (clientes)
+            {
+                foreach (var c in clientes)
+                {
+                    try
+                    {
+                        if (c.Connected)
+                        {
+                            NetworkStream ns = c.GetStream();
+                            StreamWriter w = new StreamWriter(ns, Encoding.UTF8) { AutoFlush = true };
+                            w.WriteLine(mensaje);
+                        }
+                    }
+                    catch
+                    {
+                        // Ignorar errores de clientes desconectados
+                    }
+                }
+            }
         }
     }
     catch (Exception ex)
@@ -49,6 +72,7 @@ static void ManejarCliente(TcpClient cliente)
     finally
     {
         Console.WriteLine("[SERVIDOR] Cliente desconectado.");
+        clientes.Remove(cliente);
         cliente.Close();
     }
 }
