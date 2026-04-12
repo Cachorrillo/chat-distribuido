@@ -43,7 +43,16 @@ static async Task HandleClientAsync(
             if (bytesRead == 0)
                 break;
 
-            string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+            string message = Encoding.UTF8.GetString(buffer, 0, bytesRead).Trim();
+
+            // HEARTBEAT
+            if (message == "PING")
+            {
+                byte[] pong = Encoding.UTF8.GetBytes("PONG");
+                await stream.WriteAsync(pong, 0, pong.Length);
+                continue;
+            }
+
             string finalMessage = $"[{role}] Cliente {clientId}: {message}";
 
             Console.WriteLine(finalMessage.Trim());

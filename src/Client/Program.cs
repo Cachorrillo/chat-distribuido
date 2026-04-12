@@ -1,5 +1,6 @@
 ﻿using System.Net.Sockets;
 using System.Text;
+using System.Linq;
 
 var servers = new List<(string Host, int Port, string Name)>
 {
@@ -12,6 +13,9 @@ NetworkStream? stream = null;
 CancellationTokenSource? listenCts = null;
 
 bool connectionLost = true;
+DateTime lastPongTime = DateTime.MinValue;
+DateTime? disconnectionTime = null;
+string? currentServerName = null;
 object stateLock = new();
 
 _ = Task.Run(async () =>
@@ -37,17 +41,123 @@ _ = Task.Run(async () =>
                 {
                     client = result.Client;
                     stream = result.Stream;
+                    currentServerName = result.Client.Client.RemoteEndPoint?.ToString()?.Contains(":5001") == true
+                        ? "BACKUP"
+                        : "MAIN";
+
+                    if (disconnectionTime.HasValue)
+                    {
+                        TimeSpan reconnectTime = DateTime.Now - disconnectionTime.Value;
+                        Console.WriteLine($"Tiempo de reconexión: {reconnectTime.TotalSeconds:F2} segundos");
+                        disconnectionTime = null;
+                    }
+
                     connectionLost = false;
+                    lastPongTime = DateTime.Now;
+                    HeartbeatState.LastPong = DateTime.Now;
 
                     listenCts?.Cancel();
                     listenCts = new CancellationTokenSource();
+
                     _ = Task.Run(() => ListenForMessagesAsync(client, stream, listenCts.Token, () =>
                     {
                         lock (stateLock)
                         {
+                            if (!connectionLost)
+                            {
+                                disconnectionTime = DateTime.Now;
+                            }
+
                             connectionLost = true;
                         }
                     }));
+
+                    _ = Task.Run(() => HeartbeatLoopAsync(
+                        () =>
+                        {
+                            lock (stateLock)
+                            {
+                                return (client, stream, connectionLost, lastPongTime);
+                            }
+                        },
+                        () =>
+                        {
+                            lock (stateLock)
+                            {
+                                if (!connectionLost)
+                                {
+                                    disconnectionTime = DateTime.Now;
+                                }
+
+                                connectionLost = true;
+                            }
+                        },
+                        listenCts.Token));
+
+                    _ = Task.Run(() => FailbackLoopAsync(
+                        servers,
+                        () =>
+                        {
+                            lock (stateLock)
+                            {
+                                return (client, stream, connectionLost, currentServerName);
+                            }
+                        },
+                        (newClient, newStream) =>
+                        {
+                            lock (stateLock)
+                            {
+                                Console.WriteLine("\nMAIN disponible nuevamente. Volviendo al servidor principal...");
+
+                                client?.Close();
+
+                                client = newClient;
+                                stream = newStream;
+                                currentServerName = "MAIN";
+                                connectionLost = false;
+                                lastPongTime = DateTime.Now;
+                                HeartbeatState.LastPong = DateTime.Now;
+
+                                listenCts?.Cancel();
+                                listenCts = new CancellationTokenSource();
+
+                                _ = Task.Run(() => ListenForMessagesAsync(client, stream, listenCts.Token, () =>
+                                {
+                                    lock (stateLock)
+                                    {
+                                        if (!connectionLost)
+                                        {
+                                            disconnectionTime = DateTime.Now;
+                                        }
+
+                                        connectionLost = true;
+                                    }
+                                }));
+
+                                _ = Task.Run(() => HeartbeatLoopAsync(
+                                    () =>
+                                    {
+                                        lock (stateLock)
+                                        {
+                                            return (client, stream, connectionLost, lastPongTime);
+                                        }
+                                    },
+                                    () =>
+                                    {
+                                        lock (stateLock)
+                                        {
+                                            if (!connectionLost)
+                                            {
+                                                disconnectionTime = DateTime.Now;
+                                            }
+
+                                            connectionLost = true;
+                                        }
+                                    },
+                                    listenCts.Token));
+                            }
+                        },
+                        listenCts.Token));
                 }
             }
             else
@@ -96,6 +206,11 @@ while (true)
         Console.WriteLine("Se perdió la conexión. Esperando reconexión automática...");
         lock (stateLock)
         {
+            if (!connectionLost)
+            {
+                disconnectionTime = DateTime.Now;
+            }
+
             connectionLost = true;
         }
     }
@@ -112,6 +227,7 @@ static async Task<(TcpClient? Client, NetworkStream? Stream)> ConnectToAvailable
             await client.ConnectAsync(server.Host, server.Port);
 
             Console.WriteLine($"Conectado a {server.Name} ({server.Host}:{server.Port})");
+            Console.Write("Tú: ");
             return (client, client.GetStream());
         }
         catch
@@ -140,11 +256,19 @@ static async Task ListenForMessagesAsync(
             if (bytesRead == 0)
             {
                 Console.WriteLine("\nConexión cerrada por el servidor.");
+                Console.Write("Tú: ");
                 onConnectionLost();
                 break;
             }
 
-            string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+            string message = Encoding.UTF8.GetString(buffer, 0, bytesRead).Trim();
+
+            if (message == "PONG")
+            {
+                HeartbeatState.LastPong = DateTime.Now;
+                continue;
+            }
+
             Console.WriteLine($"\n{message}");
             Console.Write("Tú: ");
         }
@@ -155,6 +279,102 @@ static async Task ListenForMessagesAsync(
     catch
     {
         Console.WriteLine("\nSe perdió la conexión con el servidor.");
+        Console.Write("Tú: ");
         onConnectionLost();
     }
+}
+
+static async Task HeartbeatLoopAsync(
+    Func<(TcpClient? Client, NetworkStream? Stream, bool Lost, DateTime LastPong)> getState,
+    Action markConnectionLost,
+    CancellationToken token)
+{
+    while (!token.IsCancellationRequested)
+    {
+        try
+        {
+            var (client, stream, lost, _) = getState();
+
+            if (!lost && client != null && stream != null && client.Connected)
+            {
+                byte[] ping = Encoding.UTF8.GetBytes("PING");
+                await stream.WriteAsync(ping, 0, ping.Length);
+
+                await Task.Delay(3000, token);
+
+                TimeSpan elapsed = DateTime.Now - HeartbeatState.LastPong;
+                if (elapsed.TotalSeconds > 6)
+                {
+                    Console.WriteLine("\nHeartbeat perdido. Marcando conexión como caída...");
+                    Console.Write("Tú: ");
+                    markConnectionLost();
+                    break;
+                }
+            }
+            else
+            {
+                break;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            break;
+        }
+        catch
+        {
+            Console.WriteLine("\nError en heartbeat. Marcando conexión como caída...");
+            Console.Write("Tú: ");
+            markConnectionLost();
+            break;
+        }
+    }
+}
+
+static async Task FailbackLoopAsync(
+    List<(string Host, int Port, string Name)> servers,
+    Func<(TcpClient? Client, NetworkStream? Stream, bool Lost, string? CurrentServer)> getState,
+    Action<TcpClient, NetworkStream> switchToMain,
+    CancellationToken token)
+{
+    while (!token.IsCancellationRequested)
+    {
+        try
+        {
+            var (_, _, lost, currentServer) = getState();
+
+            if (!lost && currentServer == "BACKUP")
+            {
+                var main = servers.First(s => s.Name == "MAIN");
+
+                try
+                {
+                    var testClient = new TcpClient();
+                    await testClient.ConnectAsync(main.Host, main.Port);
+
+                    var testStream = testClient.GetStream();
+                    switchToMain(testClient, testStream);
+                    break;
+                }
+                catch
+                {
+                    // MAIN sigue caído
+                }
+            }
+
+            await Task.Delay(5000, token);
+        }
+        catch (OperationCanceledException)
+        {
+            break;
+        }
+        catch
+        {
+            await Task.Delay(5000, token);
+        }
+    }
+}
+
+static class HeartbeatState
+{
+    public static DateTime LastPong = DateTime.MinValue;
 }
