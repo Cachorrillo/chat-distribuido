@@ -1,102 +1,306 @@
-\# Semana 13 – Diseño del sistema
+\# Semana 13 - Revisión Bibliográfica y Marco Teórico
 
 
 
-\## Arquitectura del sistema
+\##  Introducción
 
 
 
-El sistema propuesto seguirá una arquitectura cliente-servidor distribuida, compuesta por múltiples clientes, un servidor principal y un servidor de respaldo.
+En esta sección se presenta la revisión bibliográfica y el marco teórico que fundamenta el desarrollo del proyecto de chat distribuido con tolerancia a fallos. Se abordan los conceptos clave necesarios para comprender el funcionamiento del sistema, incluyendo sockets, concurrencia, sistemas distribuidos, alta disponibilidad y tolerancia a fallos.
 
 
 
-Los clientes se conectarán inicialmente al servidor principal, el cual será responsable de recibir, procesar y distribuir los mensajes entre los usuarios conectados. Para garantizar la disponibilidad del sistema, se incorporará un servidor de respaldo que permitirá mantener la continuidad del servicio en caso de fallo del servidor principal.
+\---
 
 
 
-Esta arquitectura permite implementar mecanismos básicos de alta disponibilidad sin requerir configuraciones complejas de replicación o consenso.
+\##  1. Sockets y comunicación TCP
 
 
 
-\## Componentes del sistema
+Los sockets son un mecanismo fundamental para la comunicación entre procesos en una red. En el contexto de este proyecto, se utilizan sockets TCP para establecer conexiones confiables entre el servidor y múltiples clientes.
 
 
 
-\### Cliente
+El protocolo TCP (Transmission Control Protocol) garantiza:
 
-Aplicación encargada de conectarse al servidor, enviar mensajes y recibir mensajes en tiempo real.
 
 
+\- Entrega ordenada de los datos
 
-\### Servidor principal (MAIN)
+\- Control de errores
 
-Responsable de:
+\- Reintentos automáticos de transmisión
 
-\- Aceptar conexiones de múltiples clientes
+\- Conexión orientada a flujo
 
-\- Gestionar la comunicación
 
-\- Distribuir mensajes a todos los clientes conectados
 
+Estas características lo hacen ideal para aplicaciones como sistemas de chat, donde la integridad de los mensajes es fundamental.
 
 
-\### Servidor de respaldo (BACKUP)
 
-Encargado de:
+En .NET, los sockets se implementan mediante clases como `TcpListener` y `TcpClient`, que permiten aceptar conexiones y enviar/recibir datos a través de streams.
 
-\- Estar disponible en caso de fallo del servidor principal
 
-\- Aceptar conexiones cuando el servidor principal no esté disponible
 
+\---
 
 
-\## Flujo de comunicación
 
+\##  2. Concurrencia en sistemas de red
 
 
-1\. El cliente intenta conectarse al servidor principal.
 
-2\. Si la conexión es exitosa, comienza la comunicación normal.
+La concurrencia es la capacidad de un sistema para manejar múltiples tareas simultáneamente. En aplicaciones de red, es esencial para atender múltiples clientes sin bloquear el servidor.
 
-3\. El cliente envía mensajes al servidor.
 
-4\. El servidor distribuye los mensajes a todos los clientes conectados.
 
-5\. Si el servidor principal falla, el cliente detecta la desconexión.
+En este proyecto, la concurrencia se logra mediante:
 
-6\. El cliente intenta conectarse automáticamente al servidor de respaldo.
 
-7\. La comunicación continúa a través del servidor de respaldo.
 
+\- Tareas asíncronas (`Task`)
 
+\- Procesamiento independiente por cliente
 
-\## Manejo de fallos
+\- Uso de estructuras seguras para múltiples hilos (como `ConcurrentDictionary`)
 
 
 
-El sistema implementará un mecanismo básico de tolerancia a fallos mediante:
+Esto permite que el servidor:
 
 
 
-\- Detección de desconexión del servidor principal.
+\- Acepte múltiples conexiones simultáneas
 
-\- Intentos de reconexión automática.
+\- Procese mensajes de varios clientes en paralelo
 
-\- Cambio de conexión hacia un servidor alterno.
+\- Evite bloqueos que afecten a todo el sistema
 
 
 
-Este enfoque permite mantener la disponibilidad del sistema ante fallos simples, alineándose con los objetivos del proyecto.
+\---
 
 
 
-\## Consideraciones de diseño
+\##  3. Sistemas distribuidos
 
 
 
-\- Se utilizarán sockets TCP para garantizar la confiabilidad de la comunicación.
+Un sistema distribuido está compuesto por múltiples nodos que cooperan para ofrecer un servicio. Estos nodos pueden estar en diferentes máquinas o procesos, pero funcionan como un sistema unificado.
 
-\- Se implementará concurrencia en el servidor para soportar múltiples clientes simultáneos.
 
-\- El sistema estará preparado para ejecutarse en entornos Linux mediante contenedores Docker.
+
+Las características principales de los sistemas distribuidos incluyen:
+
+
+
+\- Comunicación entre nodos mediante red
+
+\- Independencia de fallos
+
+\- Escalabilidad
+
+\- Transparencia para el usuario
+
+
+
+En este proyecto, el sistema distribuido se representa mediante:
+
+
+
+\- Un servidor principal (MAIN)
+
+\- Un servidor de respaldo (BACKUP)
+
+\- Múltiples clientes conectados
+
+
+
+\---
+
+
+
+\##  4. Tolerancia a fallos
+
+
+
+La tolerancia a fallos es la capacidad de un sistema para continuar operando incluso cuando uno de sus componentes falla.
+
+
+
+En el contexto de este proyecto, se implementa mediante:
+
+
+
+\- Redundancia de servidores (MAIN y BACKUP)
+
+\- Detección de desconexión
+
+\- Reconexión automática del cliente
+
+
+
+Esto permite que, ante la caída del servidor principal, el sistema continúe funcionando mediante el servidor de respaldo.
+
+
+
+\---
+
+
+
+\##  5. Alta disponibilidad
+
+
+
+La alta disponibilidad se refiere a la capacidad de un sistema para mantenerse operativo la mayor parte del tiempo, minimizando el tiempo de inactividad.
+
+
+
+Se logra mediante:
+
+
+
+\- Redundancia de componentes
+
+\- Mecanismos de recuperación automática
+
+\- Diseño orientado a fallos
+
+
+
+En este proyecto, la alta disponibilidad se implementa utilizando un modelo \*\*activo-respaldo\*\*, donde:
+
+
+
+\- El servidor MAIN atiende las solicitudes
+
+\- El servidor BACKUP entra en funcionamiento cuando el principal falla
+
+
+
+\---
+
+
+
+\##  6. Escalabilidad
+
+
+
+La escalabilidad es la capacidad de un sistema para manejar un aumento en la carga de trabajo.
+
+
+
+Existen dos tipos principales:
+
+
+
+\- Escalabilidad vertical: aumentar recursos en una misma máquina
+
+\- Escalabilidad horizontal: agregar más nodos al sistema
+
+
+
+Este proyecto permite escalabilidad horizontal básica mediante:
+
+
+
+\- Soporte para múltiples clientes concurrentes
+
+\- Posibilidad de agregar más servidores en el futuro
+
+
+
+\---
+
+
+
+\##  7. Seguridad básica en sistemas de red
+
+
+
+Aunque este proyecto no está enfocado en seguridad avanzada, se consideran aspectos básicos como:
+
+
+
+\- Validación de mensajes
+
+\- Manejo de excepciones para evitar caídas del sistema
+
+\- Uso de TCP para garantizar integridad de datos
+
+
+
+En futuras mejoras, se podrían incluir:
+
+
+
+\- Autenticación de usuarios
+
+\- Encriptación de mensajes
+
+\- Control de acceso
+
+
+
+\---
+
+
+
+\##  8. Métricas y evaluación del sistema
+
+
+
+Para evaluar el desempeño del sistema, se pueden considerar métricas como:
+
+
+
+\- Tiempo de respuesta
+
+\- Tiempo de reconexión ante fallos
+
+\- Tiempo de inactividad (downtime)
+
+\- Número de clientes concurrentes soportados
+
+
+
+Estas métricas permiten analizar la calidad del sistema y proponer mejoras.
+
+
+
+\---
+
+
+
+\##  Referencias bibliográficas
+
+
+
+\- Tanenbaum, A. S., \& Van Steen, M. (2017). \*Distributed Systems: Principles and Paradigms\*. Pearson.
+
+\- Coulouris, G., Dollimore, J., Kindberg, T., \& Blair, G. (2011). \*Distributed Systems: Concepts and Design\*. Addison-Wesley.
+
+\- Sommerville, I. (2016). \*Software Engineering\*. Pearson.
+
+\- Microsoft Docs. (2024). \*TCP Classes (System.Net.Sockets)\*. Recuperado de: https://learn.microsoft.com
+
+\- Kurose, J. F., \& Ross, K. W. (2017). \*Computer Networking: A Top-Down Approach\*. Pearson.
+
+
+
+\---
+
+
+
+\##  Conclusión
+
+
+
+El marco teórico presentado proporciona la base conceptual necesaria para el desarrollo del sistema de chat distribuido. Los conceptos de sockets, concurrencia y sistemas distribuidos son fundamentales para la implementación, mientras que la alta disponibilidad y la tolerancia a fallos permiten garantizar la continuidad del servicio.
+
+
+
+Estos fundamentos teóricos respaldan las decisiones de diseño adoptadas en el proyecto y permiten evaluar su comportamiento en escenarios reales de fallo.
 
