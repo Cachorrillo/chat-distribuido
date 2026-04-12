@@ -22,6 +22,7 @@ Como estrategia principal, se plantea una arquitectura con servidor principal y 
 - `docs/semana11.md`: definición del tema, objetivos y alcance
 - `docs/semana12.md`: metodología, herramientas, recursos y plan de trabajo
 - `docs/semana13.md`: diseño del sistema
+- `docs/semana14.md`: Alta disponibilidad y tolerancia a fallos
 - `src/Server`: código del servidor
 - `src/Client`: código del cliente
 - `docker/`: archivos de despliegue con contenedores

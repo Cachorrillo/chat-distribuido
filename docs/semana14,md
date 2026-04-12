@@ -1,0 +1,160 @@
+# Semana 14 - Alta disponibilidad y tolerancia a fallos
+
+##  Objetivo
+
+Implementa mecanismos de alta disponibilidad en el sistema de chat distribuido, permitiendo que el servicio continúe funcionando ante la caída del servidor principal mediante el uso de un servidor de respaldo y lógica de reconexión automática en el cliente.
+
+---
+
+## Cambios implementados
+
+Durante esta semana se realizaron mejoras significativas en la arquitectura del sistema:
+
+### 1. Implementación de servidor principal y servidor respaldo
+
+Se configuraron dos instancias del servidor:
+
+- **Servidor MAIN** (puerto 5000)
+- **Servidor BACKUP** (puerto 5001)
+
+Ambos servidores utilizan la misma lógica, pero operan en puertos distintos, permitiendo redundancia del servicio.
+
+---
+
+### 2. Cliente inteligente con failover
+
+Se modificó el cliente para que soporte múltiples servidores mediante una lista de endpoints:
+
+- Primero intenta conectarse al servidor MAIN
+- Si no está disponible, intenta conectarse al servidor BACKUP
+
+---
+
+### 3. Reconexión automática
+
+Se implementó un mecanismo de reconexión en segundo plano:
+
+- El cliente detecta la caída del servidor mediante errores en la comunicación TCP
+- Se activa un proceso automático que intenta reconectar sin intervención del usuario
+- Se prioriza el servidor principal y, si no está disponible, se conecta al respaldo
+
+---
+
+## Diseño de la solución
+
+Se implementó un modelo de **alta disponibilidad tipo activo-respaldo**:
+
+- El servidor MAIN atiende todas las conexiones en condiciones normales
+- El servidor BACKUP permanece disponible como alternativa
+- El cliente es responsable de decidir a cuál servidor conectarse
+
+Este enfoque permite mantener el sistema operativo incluso ante fallos del nodo principal.
+
+---
+
+## Pruebas realizadas
+
+### Prueba 1: Operación normal
+
+**Escenario:**
+- Se ejecutan ambos servidores (MAIN y BACKUP)
+- Se conectan múltiples clientes
+
+**Resultado:**
+- Todos los clientes se conectan al servidor MAIN
+- El sistema de broadcast funciona correctamente
+- Los mensajes se distribuyen en tiempo real entre clientes
+
+---
+
+###  Prueba 2: Caída del servidor principal
+
+**Escenario:**
+- Clientes conectados al servidor MAIN
+- Se apaga el servidor MAIN durante la ejecución
+
+**Resultado observado:**
+- Los clientes detectan la pérdida de conexión
+- Se activa automáticamente el proceso de reconexión
+- El cliente intenta primero reconectar al MAIN
+- Al no estar disponible, se conecta al BACKUP
+- El sistema continúa funcionando sin necesidad de reiniciar los clientes
+
+---
+
+###  Prueba 3: Reconexión sin intervención del usuario
+
+**Escenario:**
+- Se cae el servidor MAIN mientras los clientes están inactivos (sin escribir)
+
+**Resultado observado:**
+- El cliente detecta la desconexión desde la tarea de escucha
+- Se inicia automáticamente el intento de reconexión
+- Se establece conexión con el servidor BACKUP sin necesidad de escribir en consola
+
+---
+
+###  Observación importante
+
+Se identificó un comportamiento relacionado con la consola:
+
+- En algunos casos, el prompt de entrada (`Tú:`) no se refresca inmediatamente
+- Es necesario presionar Enter para visualizar correctamente la línea de entrada
+
+**Análisis:**
+Este comportamiento no afecta la lógica del sistema, y se debe a la naturaleza bloqueante de `Console.ReadLine()` en aplicaciones de consola.
+
+---
+
+##  Problemas encontrados
+
+Durante la implementación se identificaron los siguientes aspectos:
+
+- Pérdida de mensajes en tránsito durante la caída del servidor
+- No existe sincronización de estado entre MAIN y BACKUP
+- Limitaciones en la interfaz de consola para entrada/salida concurrente
+
+---
+
+##  Resultados obtenidos
+
+Se logró implementar:
+
+- ✔ Conexión a múltiples servidores
+- ✔ Failover automático (MAIN → BACKUP)
+- ✔ Reconexión automática sin intervención del usuario
+- ✔ Continuidad del servicio ante fallos
+- ✔ Sistema tolerante a fallos a nivel básico
+
+---
+
+##  Conclusión
+
+El sistema cumple con los principios fundamentales de alta disponibilidad en sistemas distribuidos:
+
+- Redundancia de nodos
+- Detección de fallos
+- Recuperación automática
+
+Aunque no se implementa replicación de estado, el sistema demuestra correctamente la continuidad del servicio, lo cual cumple con los objetivos.
+
+---
+
+## Mejoras futuras
+
+Para llevar el sistema a un nivel más avanzado:
+
+- Replicación de estado entre servidores
+- Heartbeats para detección más rápida de fallos
+- Balanceo de carga entre múltiples nodos
+- Elección automática de nodo líder (leader election)
+- Persistencia de mensajes
+- Interfaz gráfica para mejorar la experiencia del usuario
+
+---
+
+## Reflexión
+
+Esto permitió comprender que la alta disponibilidad no depende únicamente de tener múltiples servidores, sino de la capacidad del sistema para detectar fallos y recuperarse automáticamente.
+
+El uso de un cliente inteligente resultó clave para lograr tolerancia a fallos sin necesidad de mecanismos complejos en el servidor.
