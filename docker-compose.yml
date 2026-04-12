@@ -16,3 +16,12 @@ services:
     command: ["BACKUP"]
     ports:
       - "5001:5001"
+
+  client-template:
+    build:
+      context: .
+      dockerfile: docker/client.Dockerfile
+    image: chat-distribuido-client
+    profiles: ["manual"]
+    stdin_open: true
+    tty: true
