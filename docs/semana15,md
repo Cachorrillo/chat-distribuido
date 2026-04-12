@@ -1,0 +1,138 @@
+# Semana 15: Informe Final del Proyecto
+
+## 1. Introducción
+
+El presente proyecto tiene como objetivo el desarrollo de un sistema de chat distribuido utilizando sockets TCP en C#. A diferencia de un sistema convencional, el enfoque principal no se centra únicamente en la funcionalidad, sino en la implementación de características propias de sistemas distribuidos, tales como concurrencia, tolerancia a fallos y alta disponibilidad.
+
+El sistema fue diseñado para mantener la continuidad del servicio incluso ante la caída de uno de sus componentes, simulando un entorno distribuido real mediante el uso de contenedores Docker.
+
+---
+
+## 2. Objetivos
+
+### Objetivo general
+
+Desarrollar un sistema de chat distribuido que implemente mecanismos de concurrencia, tolerancia a fallos y alta disponibilidad.
+
+### Objetivos específicos
+
+* Implementar comunicación cliente-servidor mediante sockets TCP.
+* Permitir la conexión simultánea de múltiples clientes.
+* Diseñar un sistema con servidor principal y servidor de respaldo.
+* Implementar mecanismos de failover y failback.
+* Desplegar el sistema utilizando Docker para simular un entorno distribuido.
+* Evaluar el comportamiento del sistema ante fallos.
+
+---
+
+## 3. Marco teórico
+
+Los sistemas distribuidos permiten la ejecución de múltiples componentes en diferentes nodos, comunicándose entre sí mediante redes. En este contexto, conceptos como concurrencia, tolerancia a fallos y alta disponibilidad son fundamentales.
+
+* **Concurrencia:** permite que múltiples clientes interactúen con el sistema simultáneamente.
+* **Alta disponibilidad:** garantiza que el sistema continúe funcionando ante fallos.
+* **Tolerancia a fallos:** capacidad del sistema de recuperarse automáticamente ante errores.
+* **Failover:** cambio automático a un sistema de respaldo.
+* **Failback:** retorno automático al sistema principal una vez recuperado.
+
+---
+
+## 4. Metodología
+
+Se utilizó un enfoque práctico basado en desarrollo incremental:
+
+1. Implementación básica de comunicación TCP.
+2. Incorporación de concurrencia mediante tareas.
+3. Implementación de broadcast de mensajes.
+4. Desarrollo de lógica de reconexión en el cliente.
+5. Implementación de failover y failback.
+6. Contenerización del sistema utilizando Docker.
+7. Ejecución de pruebas en distintos escenarios.
+
+---
+
+## 5. Implementación
+
+El sistema está compuesto por:
+
+### Servidor
+
+* Manejo concurrente de múltiples clientes.
+* Recepción y difusión de mensajes.
+* Identificación de clientes conectados.
+* Respuesta a señales PING/PONG.
+
+### Cliente
+
+* Conexión automática al servidor principal.
+* Reconexión automática al servidor de respaldo.
+* Retorno automático al servidor principal.
+* Ejecución concurrente de tareas.
+* Interfaz interactiva en consola.
+
+### Docker
+
+* Cada servidor se ejecuta en un contenedor independiente.
+* Comunicación mediante red virtual.
+* Clientes ejecutados como contenedores interactivos.
+
+---
+
+## 6. Pruebas y resultados
+
+Se realizaron múltiples pruebas para validar el sistema:
+
+### Prueba de concurrencia
+
+Se conectaron múltiples clientes simultáneamente, verificando el intercambio de mensajes en tiempo real.
+
+### Prueba de fallo del servidor principal
+
+Se detuvo el contenedor `server-main`, observando que los clientes:
+
+* detectaron la pérdida de conexión
+* se reconectaron automáticamente al servidor de respaldo
+
+### Prueba de recuperación del sistema
+
+Al reiniciar el servidor principal:
+
+* los clientes detectaron su disponibilidad
+* se reconectaron automáticamente al servidor principal
+
+### Prueba en entorno Docker
+
+El sistema fue ejecutado desde un entorno clonado en WSL, validando su portabilidad y facilidad de despliegue.
+
+---
+
+## 7. Análisis de resultados
+
+Los resultados obtenidos demuestran que el sistema cumple con los objetivos planteados. Se logró mantener la continuidad del servicio incluso ante la caída del servidor principal.
+
+El uso de Docker permitió validar el comportamiento del sistema en un entorno aislado, confirmando su capacidad de despliegue en diferentes entornos.
+
+Se identificaron posibles mejoras en la sincronización interna del cliente, especialmente en escenarios de reconexión simultánea.
+
+---
+
+## 8. Conclusiones
+
+El proyecto permitió aplicar conceptos fundamentales de sistemas distribuidos en un entorno práctico. Se logró implementar un sistema capaz de:
+
+* manejar múltiples clientes concurrentes
+* tolerar fallos del servidor principal
+* recuperarse automáticamente
+* mantener la continuidad del servicio
+
+Se concluye que el sistema cumple con los objetivos establecidos y representa una base sólida para futuras mejoras.
+
+---
+
+## 9. Trabajo futuro
+
+* Implementación de balanceador de carga
+* Persistencia de sesiones
+* Sistema de autenticación
+* Monitoreo y métricas avanzadas
+* Optimización de concurrencia en el cliente
