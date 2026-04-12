@@ -1,0 +1,18 @@
+services:
+  server-main:
+    build:
+      context: .
+      dockerfile: docker/server.Dockerfile
+    container_name: server-main
+    command: ["MAIN"]
+    ports:
+      - "5000:5000"
+
+  server-backup:
+    build:
+      context: .
+      dockerfile: docker/server.Dockerfile
+    container_name: server-backup
+    command: ["BACKUP"]
+    ports:
+      - "5001:5001"

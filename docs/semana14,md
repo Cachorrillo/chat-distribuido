@@ -158,3 +158,11 @@ Para llevar el sistema a un nivel más avanzado:
 Esto permitió comprender que la alta disponibilidad no depende únicamente de tener múltiples servidores, sino de la capacidad del sistema para detectar fallos y recuperarse automáticamente.
 
 El uso de un cliente inteligente resultó clave para lograr tolerancia a fallos sin necesidad de mecanismos complejos en el servidor.
+
+### Prueba adicional en contenedores Docker
+
+Se desplegó el sistema en un entorno contenerizado utilizando Docker sobre WSL. Se ejecutaron dos contenedores de servidor (MAIN y BACKUP) y múltiples clientes interactivos conectados a la red virtual de Docker.
+
+Durante la prueba se conectaron tres clientes simultáneamente al servidor principal. Posteriormente, se simuló la caída del contenedor `server-main`, observándose que los tres clientes detectaron la pérdida de conexión y realizaron failover hacia `server-backup`. Luego se restauró el servidor principal, y los clientes ejecutaron failback automático hacia `MAIN`, manteniendo la continuidad del servicio y permitiendo seguir intercambiando mensajes.
+
+Este resultado confirma que la arquitectura diseñada conserva disponibilidad del servicio incluso ante fallos del nodo principal, y además demuestra compatibilidad con despliegues aislados mediante contenedores.

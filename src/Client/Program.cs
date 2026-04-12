@@ -4,8 +4,8 @@ using System.Linq;
 
 var servers = new List<(string Host, int Port, string Name)>
 {
-    ("127.0.0.1", 5000, "MAIN"),
-    ("127.0.0.1", 5001, "BACKUP")
+    ("server-main", 5000, "MAIN"),
+    ("server-backup", 5001, "BACKUP")
 };
 
 TcpClient? client = null;
