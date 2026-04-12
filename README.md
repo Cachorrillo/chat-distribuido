@@ -43,18 +43,108 @@ Para ejecutar el proyecto necesitas:
 
 ---
 
-## 🚀 Cómo ejecutar el proyecto
+## Ejecución del proyecto (paso a paso)
+
+A continuación se describe el proceso completo para ejecutar el sistema de chat distribuido utilizando Docker.
+
+---
 
 ### 1. Clonar el repositorio
 
 ```bash
-git clone https://github.com/TU_USUARIO/chat-distribuido.git
+git clone "direccion"
 cd chat-distribuido
+```
 
+---
+
+### 2. Levantar los servidores
+
+```bash
 docker compose up --build -d
+```
 
-docker run -it --rm --network chat-distribuido_default chat-distribuido-client1 --> esto para abrir nuevas terminales y emulen clientes
+Esto iniciará los siguientes servicios:
 
-docker stop server-main ---> detener el servidor principal para autoconectarse al backup
+* `server-main` → servidor principal (puerto 5000)
+* `server-backup` → servidor de respaldo (puerto 5001)
 
-docker start server-main ----> encender el servidor principal y se conecte denuevo a el de manera automatica
+---
+
+### 3. Construir la imagen del cliente
+
+```bash
+docker compose build client-template
+```
+
+Este paso genera la imagen `chat-distribuido-client`, la cual será utilizada para crear instancias de clientes interactivos.
+
+---
+
+###  4. Ejecutar clientes (modo interactivo)
+
+Para simular usuarios, abre una nueva terminal por cada cliente y ejecuta:
+
+```bash
+docker run -it --rm --network chat-distribuido_default chat-distribuido-client
+```
+
+Puedes abrir múltiples clientes repitiendo el mismo comando en diferentes terminales.
+
+---
+
+### 5. Probar el chat
+
+* Escribe mensajes en cualquier cliente
+* Verifica que los demás clientes los reciben en tiempo real
+
+---
+
+##  Prueba de alta disponibilidad
+
+###  Simular fallo del servidor principal
+
+```bash
+docker stop server-main
+```
+
+Comportamiento esperado:
+
+* Los clientes detectan la caída
+* Se reconectan automáticamente al servidor de respaldo (`BACKUP`)
+* El chat continúa funcionando
+
+---
+
+### Restaurar el servidor principal
+
+```bash
+docker start server-main
+```
+
+Comportamiento esperado:
+
+* Los clientes detectan que el servidor principal volvió
+* Se reconectan automáticamente a `MAIN`
+* El chat continúa sin interrupciones
+
+---
+
+## Detener el sistema
+
+```bash
+docker compose down
+```
+
+---
+
+## Nota importante
+
+El nombre de la red Docker puede variar dependiendo del nombre de la carpeta del proyecto.
+Para verificarlo, puedes usar:
+
+```bash
+docker network ls
+```
+
+En caso de ser diferente, reemplaza `chat-distribuido_default` en el comando del cliente por el nombre correcto.
