@@ -11,45 +11,97 @@ TcpClient? client = null;
 NetworkStream? stream = null;
 CancellationTokenSource? listenCts = null;
 
-while (true)
-{
-    if (client == null || !client.Connected)
-    {
-        (client, stream) = await ConnectToAvailableServerAsync(servers);
+bool connectionLost = true;
+object stateLock = new();
 
-        if (client == null || stream == null)
+_ = Task.Run(async () =>
+{
+    while (true)
+    {
+        bool shouldReconnect;
+
+        lock (stateLock)
         {
-            Console.WriteLine("No se pudo conectar a ningún servidor. Reintentando en 3 segundos...");
-            await Task.Delay(3000);
-            continue;
+            shouldReconnect = connectionLost;
         }
 
-        listenCts = new CancellationTokenSource();
-        _ = Task.Run(() => ListenForMessagesAsync(client, stream, listenCts.Token));
-    }
+        if (shouldReconnect)
+        {
+            Console.WriteLine("\nIntentando conectar o reconectar...");
 
+            var result = await ConnectToAvailableServerAsync(servers);
+
+            if (result.Client != null && result.Stream != null)
+            {
+                lock (stateLock)
+                {
+                    client = result.Client;
+                    stream = result.Stream;
+                    connectionLost = false;
+
+                    listenCts?.Cancel();
+                    listenCts = new CancellationTokenSource();
+                    _ = Task.Run(() => ListenForMessagesAsync(client, stream, listenCts.Token, () =>
+                    {
+                        lock (stateLock)
+                        {
+                            connectionLost = true;
+                        }
+                    }));
+                }
+            }
+            else
+            {
+                Console.WriteLine("No se pudo conectar a ningún servidor. Reintentando en 3 segundos...");
+                await Task.Delay(3000);
+            }
+        }
+
+        await Task.Delay(500);
+    }
+});
+
+while (true)
+{
     Console.Write("Tú: ");
     string? message = Console.ReadLine();
 
     if (string.IsNullOrWhiteSpace(message))
         continue;
 
+    TcpClient? currentClient;
+    NetworkStream? currentStream;
+    bool lost;
+
+    lock (stateLock)
+    {
+        currentClient = client;
+        currentStream = stream;
+        lost = connectionLost;
+    }
+
+    if (lost || currentClient == null || currentStream == null || !currentClient.Connected)
+    {
+        Console.WriteLine("No hay conexión activa. Espera la reconexión automática...");
+        continue;
+    }
+
     try
     {
         byte[] data = Encoding.UTF8.GetBytes(message);
-        await stream.WriteAsync(data, 0, data.Length);
+        await currentStream.WriteAsync(data, 0, data.Length);
     }
     catch
     {
-        Console.WriteLine("Se perdió la conexión. Intentando reconectar...");
-        listenCts?.Cancel();
-        client.Close();
-        client = null;
-        stream = null;
+        Console.WriteLine("Se perdió la conexión. Esperando reconexión automática...");
+        lock (stateLock)
+        {
+            connectionLost = true;
+        }
     }
 }
 
-static async Task<(TcpClient?, NetworkStream?)> ConnectToAvailableServerAsync(
+static async Task<(TcpClient? Client, NetworkStream? Stream)> ConnectToAvailableServerAsync(
     List<(string Host, int Port, string Name)> servers)
 {
     foreach (var server in servers)
@@ -74,7 +126,8 @@ static async Task<(TcpClient?, NetworkStream?)> ConnectToAvailableServerAsync(
 static async Task ListenForMessagesAsync(
     TcpClient client,
     NetworkStream stream,
-    CancellationToken token)
+    CancellationToken token,
+    Action onConnectionLost)
 {
     byte[] buffer = new byte[1024];
 
@@ -87,6 +140,7 @@ static async Task ListenForMessagesAsync(
             if (bytesRead == 0)
             {
                 Console.WriteLine("\nConexión cerrada por el servidor.");
+                onConnectionLost();
                 break;
             }
 
@@ -101,5 +155,6 @@ static async Task ListenForMessagesAsync(
     catch
     {
         Console.WriteLine("\nSe perdió la conexión con el servidor.");
+        onConnectionLost();
     }
 }
